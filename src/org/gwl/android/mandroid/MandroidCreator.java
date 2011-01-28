@@ -28,7 +28,7 @@ public class MandroidCreator extends Observable implements Runnable {
 	
 	public MandroidCreator(ViewParams params) {
 		_params = params;
-		_buffer = new int[_params.width * _params.height];
+		_buffer = new int[_params.getWidth() * _params.getHeight()];
 		_progress = 0;
 	}
 	
@@ -56,14 +56,14 @@ public class MandroidCreator extends Observable implements Runnable {
 	public void run() {
 		
 		enumerateObservers();
-		for(int row = 0; row < _params.height; row++) {
+		for(int row = 0; row < _params.getHeight(); row++) {
 			Log.d(TAG, "row: " + row);
-			double im = _params.top - row * _params.scale;
-			for(int col = 0; col < _params.width; col++) {
-				double re = _params.left + col * _params.scale;
+			double im = _params.y2im(row);
+			for(int col = 0; col < _params.getWidth(); col++) {
+				double re = _params.x2re(col);
 				_buffer[xy2index(col, row)] = depth(re, im);
 			}
-			setProgress(row * 100 / _params.height);
+			setProgress(row * 100 / _params.getHeight());
 		}
 		//int[] buffer = creator.getBuffer();
 		Log.d(TAG, "done. instantiating coloriser");
@@ -72,7 +72,7 @@ public class MandroidCreator extends Observable implements Runnable {
 		_buffer = c.colorise(_buffer);
 		
 		Log.d(TAG, "about to create bitmap object");
-		Bitmap bmp = Bitmap.createBitmap(_buffer, _params.width, _params.height, Bitmap.Config.ARGB_8888);
+		Bitmap bmp = Bitmap.createBitmap(_buffer, _params.getWidth(), _params.getHeight(), Bitmap.Config.ARGB_8888);
 		Log.d(TAG, "done. about to notify observers");
 		setChanged();
 		notifyObservers(bmp);
@@ -91,7 +91,7 @@ public class MandroidCreator extends Observable implements Runnable {
 	}
 */	
 	private int xy2index(int x, int y) {
-		return y * _params.width + x;
+		return y * _params.getWidth() + x;
 	}
 	
 	private int depth(double re, double im) {

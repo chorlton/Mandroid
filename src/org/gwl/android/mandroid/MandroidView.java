@@ -15,13 +15,15 @@ import android.graphics.Paint;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 //import android.view.View.OnTouchListener;
+import android.view.View.OnTouchListener;
 
 /**
  * 
  */
-public class MandroidView extends View implements Observer /*OnTouchListener*/ {
+public class MandroidView extends View implements Observer, OnTouchListener {
 	
 	private static final String TAG = MandroidView.class.getName();
 	
@@ -33,6 +35,9 @@ public class MandroidView extends View implements Observer /*OnTouchListener*/ {
 	private MandroidCreator _creator = null;
 	
 	private Bitmap _bitmap;
+	
+	private float _touchX;
+	private float _touchY;
 	
 	private Handler _bitmapHandler = new Handler() {
 		public void handleMessage(Message msg) {
@@ -56,7 +61,7 @@ public class MandroidView extends View implements Observer /*OnTouchListener*/ {
 		setFocusable(true);
         setFocusableInTouchMode(true);
 
-//        this.setOnTouchListener(this);
+        this.setOnTouchListener(this);
 	}
 
 	/* (non-Javadoc)
@@ -100,12 +105,7 @@ public class MandroidView extends View implements Observer /*OnTouchListener*/ {
 	private void initViewParams() {
 		Log.d(TAG, "Initialising view parameters");
 		if(_viewParams == null) {
-			_viewParams = new ViewParams();
-			_viewParams.height = getHeight();
-			_viewParams.width = getWidth();
-			_viewParams.left = -2.0;
-			_viewParams.top = 2.0;
-			_viewParams.scale = 4.0 / ((double) getWidth());
+			_viewParams = new ViewParams(getWidth(), getHeight());
 		}
 	}
 	
@@ -144,5 +144,34 @@ public class MandroidView extends View implements Observer /*OnTouchListener*/ {
 		p.setAntiAlias(true);
 		
 		return p;
+	}
+
+	/* (non-Javadoc)
+	 * @see android.view.View.OnTouchListener#onTouch(android.view.View, android.view.MotionEvent)
+	 */
+	@Override
+	public boolean onTouch(View v, MotionEvent event) {
+		Log.d(TAG, "onTouch");
+		switch(event.getAction()) {
+		case MotionEvent.ACTION_DOWN:
+			_touchX = event.getX();
+			_touchY = event.getY();
+			Log.d(TAG, "DOWN: " + _touchX + ", " + _touchY);
+			Log.d(TAG, "reim: " + _viewParams.x2re((int) _touchX) + ", " + _viewParams.y2im((int) _touchY));
+			break;
+		case MotionEvent.ACTION_UP:
+			Log.d(TAG, "UP: " + event.getX() + ", " + event.getY());
+			Log.d(TAG, "reim: " + _viewParams.x2re((int) event.getX()) + ", " + _viewParams.y2im((int) event.getY()));
+			_viewParams = new ViewParams(_viewParams.getWidth(),
+					_viewParams.getHeight(),
+					_viewParams.getReal() + _viewParams.x2re((int) _touchX) - _viewParams.x2re((int) event.getX()),
+					_viewParams.getImag() + _viewParams.y2im((int) _touchY) - _viewParams.y2im((int) event.getY()),
+					_viewParams.getScale());
+			setDirty(true);
+			invalidate();
+			break;
+		}
+					
+		return true;
 	}
 }
