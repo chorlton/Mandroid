@@ -7,12 +7,14 @@ package org.gwl.android.mandroid;
 import java.util.Observable;
 import java.util.Observer;
 
+import org.gwl.android.mandroid.PanZoomListener.ControlType;
 import org.gwl.android.mandroid.background.MandroidCreator;
 
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.os.Handler;
 import android.os.Message;
 import android.util.AttributeSet;
@@ -34,7 +36,9 @@ public class MandroidView extends View implements Observer {
 //	private MandroidCreator _creator = null;
 	
 	private Bitmap _bitmap;
-		
+	private Rect _last; // stores the view rectangle from the last touch event
+	private Rect _dst;
+	
 	private Handler _bitmapHandler = new Handler() {
 		public void handleMessage(Message msg) {
 			Log.d(TAG, "bitmapHandler.handleMessage()");
@@ -87,6 +91,8 @@ public class MandroidView extends View implements Observer {
 	
 	public synchronized void setBitmap(Bitmap bitmap) {
 		_bitmap = bitmap;
+		_last = new Rect(0, 0, _bitmap.getWidth(), _bitmap.getHeight());
+		_dst = new Rect(0, 0, _bitmap.getWidth(), _bitmap.getHeight());
 	}
 	
 	private synchronized Bitmap getBitmap() {
@@ -126,8 +132,48 @@ public class MandroidView extends View implements Observer {
 			generateBitmap();
 		}
 		else {*/
-			canvas.drawBitmap(getBitmap(), _panZoomState.getPanX(), _panZoomState.getPanY(), _textPaint);				
+		if(_panZoomState.getControlType() == ControlType.PAN) {
+			
+		}
+			calculatePanZoomDestination(_panZoomState);
+			canvas.drawBitmap(getBitmap(), null, _dst, _textPaint);				
 		/*}*/
+	}
+
+	private void calculatePanZoomDestination(PanZoomState panZoomState) {
+		// _src records the dimensions of the rectangle after our last pan/zoom.
+		// panZoomState records the movement of the current touch event.
+		float currentZoom = ((float) _last.width()) / ((float) _bitmap.getWidth());
+		
+		if(_panZoomState.getControlType() == ControlType.ZOOM) {
+			Log.d(TAG, "Zooming");
+			float zoomFactor = _panZoomState.calculateZoom(_bitmap.getHeight());
+			Log.d(TAG, "factor = " + zoomFactor);
+			// calculate the point on the original bitmap which our start point represents.
+			float x = (panZoomState.getX() - _last.left) / currentZoom;
+			float y = (panZoomState.getY() - _last.top) / currentZoom;
+			Log.d(TAG, "x = " + x + ", y = " + y);
+			float newZoom = currentZoom * zoomFactor;
+			
+			_dst.left = (int) (x * (1 - newZoom));
+			_dst.top = (int) (y * (1 - newZoom));
+			_dst.right = (int) (_dst.left + _bitmap.getWidth() * newZoom);
+			_dst.bottom = (int) (_dst.top + _bitmap.getHeight() * newZoom);
+			Log.d(TAG, "last: " + _last.flattenToString());
+			Log.d(TAG, "dst: " + _dst.flattenToString());
+		}
+		else if(_panZoomState.getControlType() == ControlType.PAN){ // PAN
+			Log.d(TAG, "Panning");
+			_dst.left = (int) (_last.left + _panZoomState.getDX());
+			_dst.top = (int) (_last.top + _panZoomState.getDY());
+			_dst.right = (int) (_dst.left + _bitmap.getWidth() * currentZoom);
+			_dst.bottom = (int) (_dst.top + _bitmap.getHeight() * currentZoom);
+			Log.d(TAG, "last: " + _last.flattenToString());
+			Log.d(TAG, "dst: " + _dst.flattenToString());
+		}
+		else { // UP
+			_last.set(_dst);
+		}
 	}
 	
 	private Paint initaliseTextPaint() {

@@ -30,4 +30,5 @@ public class Mandroid extends Activity {
         _view.setBitmap(_bitmap);
         _view.setOnTouchListener(_touchListener);
     }
+
 }
