@@ -22,7 +22,7 @@ public class Mandroid extends Activity {
         _bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.title);
 
         _panZoomState = new PanZoomState();
-        _touchListener = new PanZoomListener();
+        _touchListener = new PanZoomListener(getApplicationContext());
         _touchListener.setPanZoomState(_panZoomState);
         
         _view = (MandroidView) findViewById(R.id.mandroidview);

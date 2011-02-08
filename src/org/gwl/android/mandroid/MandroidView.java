@@ -7,7 +7,7 @@ package org.gwl.android.mandroid;
 import java.util.Observable;
 import java.util.Observer;
 
-import org.gwl.android.mandroid.PanZoomListener.ControlType;
+import org.gwl.android.mandroid.PanZoomListener.Mode;
 import org.gwl.android.mandroid.background.MandroidCreator;
 
 import android.content.Context;
@@ -132,7 +132,7 @@ public class MandroidView extends View implements Observer {
 			generateBitmap();
 		}
 		else {*/
-		if(_panZoomState.getControlType() == ControlType.PAN) {
+		if(_panZoomState.getMode() == Mode.PAN) {
 			
 		}
 			calculatePanZoomDestination(_panZoomState);
@@ -145,7 +145,7 @@ public class MandroidView extends View implements Observer {
 		// panZoomState records the movement of the current touch event.
 		float currentZoom = ((float) _last.width()) / ((float) _bitmap.getWidth());
 		
-		if(_panZoomState.getControlType() == ControlType.ZOOM) {
+		if(_panZoomState.getMode() == Mode.ZOOM) {
 			Log.d(TAG, "Zooming");
 			float zoomFactor = _panZoomState.calculateZoom(_bitmap.getHeight());
 			Log.d(TAG, "factor = " + zoomFactor);
@@ -155,14 +155,14 @@ public class MandroidView extends View implements Observer {
 			Log.d(TAG, "x = " + x + ", y = " + y);
 			float newZoom = currentZoom * zoomFactor;
 			
-			_dst.left = (int) (x * (1 - newZoom));
-			_dst.top = (int) (y * (1 - newZoom));
+			_dst.left = (int) (_panZoomState.getX() - x * newZoom);
+			_dst.top = (int) (_panZoomState.getY() - y * newZoom);
 			_dst.right = (int) (_dst.left + _bitmap.getWidth() * newZoom);
 			_dst.bottom = (int) (_dst.top + _bitmap.getHeight() * newZoom);
 			Log.d(TAG, "last: " + _last.flattenToString());
 			Log.d(TAG, "dst: " + _dst.flattenToString());
 		}
-		else if(_panZoomState.getControlType() == ControlType.PAN){ // PAN
+		else if(_panZoomState.getMode() == Mode.PAN){ // PAN
 			Log.d(TAG, "Panning");
 			_dst.left = (int) (_last.left + _panZoomState.getDX());
 			_dst.top = (int) (_last.top + _panZoomState.getDY());
