@@ -31,24 +31,38 @@ public class MandroidView extends View implements Observer {
 	private Paint _textPaint = null;
 
 //	private int[] _buffer = null;
-	private PanZoomState _panZoomState;
+//	private PanZoomState _panZoomState;
 //	private boolean _dirty = true;
 //	private MandroidCreator _creator = null;
 	
 	private Bitmap _bitmap;
 	private Rect _last; // stores the view rectangle from the last touch event
 	private Rect _dst;
+	private MandelbrotParams _params;
+	private MandroidCreator _creator = null;
 	
 	private Handler _bitmapHandler = new Handler() {
 		public void handleMessage(Message msg) {
 			Log.d(TAG, "bitmapHandler.handleMessage()");
 			if(msg.what == MandroidCreator.FINISHED) {
 				setBitmap((Bitmap) msg.obj);
-//				setDirty(false);
-				invalidate();
 			}
 		}
 	};
+
+	/* (non-Javadoc)
+	 * @see java.util.Observer#update(java.util.Observable, java.lang.Object)
+	 */
+	@Override
+	public void update(Observable observable, Object data) {
+		// data should be a bitmap
+		if(data != null) {
+			Bitmap bitmap = (Bitmap) data;
+			Message msg = Message.obtain(_bitmapHandler, MandroidCreator.FINISHED, bitmap);
+			_bitmapHandler.sendMessage(msg);
+		}		
+	}
+
 
 	/**
 	 * @param context
@@ -56,6 +70,7 @@ public class MandroidView extends View implements Observer {
 	public MandroidView(Context context) {
 		super(context);
 
+		_params = new MandelbrotParams();
 		_textPaint = initaliseTextPaint();
 		
 		setFocusable(true);
@@ -64,23 +79,64 @@ public class MandroidView extends View implements Observer {
 	
 	public MandroidView(Context context, AttributeSet attrs) {
 		super(context, attrs);
+
+		_params = new MandelbrotParams();
+		_textPaint = initaliseTextPaint();
+		
+		setFocusable(true);
+        setFocusableInTouchMode(true);
+		
+	}
+
+	public void zoom(Zoom zoom) {
+		Log.d(TAG, "zoom");
+
+		// The current zoom is usually 1 (it's the zoom on the bitmap, not the Mandelbrot plane).
+		// However, we might get two zoom actions before the bitmap has time to recalculate in which case
+		// it needs worked out.
+		double currentZoom = ((double) _last.width()) / ((double) _bitmap.getWidth());
+		
+		// calculate the point on the original bitmap which our start point represents.
+		double x = (zoom.getx() - _last.left) / currentZoom;
+		double y = (zoom.gety() - _last.top) / currentZoom;
+		Log.d(TAG, "x = " + x + ", y = " + y);
+
+		double newZoom = currentZoom * zoom.getZoom();
+		
+		_dst.left = (int) (zoom.getx() - x * newZoom);
+		_dst.top = (int) (zoom.gety() - y * newZoom);
+		_dst.right = (int) (_dst.left + _bitmap.getWidth() * newZoom);
+		_dst.bottom = (int) (_dst.top + _bitmap.getHeight() * newZoom);
+		Log.d(TAG, "last: " + _last.flattenToString());
+		Log.d(TAG, "dst: " + _dst.flattenToString());
+		
+		invalidate();
 	}
 	
-	/* (non-Javadoc)
-	 * @see java.util.Observer#update(java.util.Observable, java.lang.Object)
-	 */
-	@Override
-	public void update(Observable trigger, Object bitmap) {
-		Log.d(TAG, "update()");
-		if(trigger == _panZoomState) {
-			invalidate();
-		}
-		else {
-			Message msg = Message.obtain(_bitmapHandler, MandroidCreator.FINISHED, bitmap);
-			_bitmapHandler.sendMessage(msg);
-		}
+	public void pan(Pan pan) {
+		Log.d(TAG, "pan");
+		
+		// The current zoom is usually 1 (it's the zoom on the bitmap, not the Mandelbrot plane).
+		// However, we might get two zoom actions before the bitmap has time to recalculate in which case
+		// it needs worked out.
+		double currentZoom = ((double) _last.width()) / ((double) _bitmap.getWidth());
+
+		_dst.left = (int) (_last.left + pan.getdx());
+		_dst.top = (int) (_last.top + pan.getdy());
+		_dst.right = (int) (_dst.left + _bitmap.getWidth() * currentZoom);
+		_dst.bottom = (int) (_dst.top + _bitmap.getHeight() * currentZoom);
+		Log.d(TAG, "last: " + _last.flattenToString());
+		Log.d(TAG, "dst: " + _dst.flattenToString());
+		
+		invalidate();
+
 	}
 	
+	public void finish(TouchOp op) {
+		_params.update(op, getWidth(), getHeight());
+		generateBitmap(getWidth(), getHeight());
+	}
+		
 //	private synchronized boolean isDirty() {
 //		return _dirty;
 //	}
@@ -93,37 +149,26 @@ public class MandroidView extends View implements Observer {
 		_bitmap = bitmap;
 		_last = new Rect(0, 0, _bitmap.getWidth(), _bitmap.getHeight());
 		_dst = new Rect(0, 0, _bitmap.getWidth(), _bitmap.getHeight());
+		invalidate();
 	}
 	
 	private synchronized Bitmap getBitmap() {
 		return _bitmap;
 	}
 	
-//	private void initViewParams() {
-//		Log.d(TAG, "Initialising view parameters");
-//		if(_state == null) {
-//			_state = new ViewState(getWidth(), getHeight());
-//		}
-//	}
-	
-	public void setPanZoomState(PanZoomState panZoomState) {
-		if(_panZoomState != null) {
-			_panZoomState.deleteObserver(this);
+	private void generateBitmap(int width, int height) {
+		Log.d(TAG, "generateBitmap()");
+		// fire and forget
+		if(_creator != null) {
+			_creator.requestStop();
+			_creator = null;
 		}
 		
-		_panZoomState = panZoomState;
-		_panZoomState.addObserver(this);
-	}
-	
-/*	private void generateBitmap() {
-		Log.d(TAG, "generateBitmap()");
-		initViewParams();
-		// fire and forget
-//		_creator = new MandroidCreator(_state);
+		_creator = new MandroidCreator(_params, width, height);
 		_creator.addObserver(this);
 		Thread thread = new Thread(_creator, "mandcreator");
 		thread.start();
-	}*/
+	}
 	
 	@Override
 	public void onDraw(Canvas canvas) {
@@ -132,35 +177,17 @@ public class MandroidView extends View implements Observer {
 			generateBitmap();
 		}
 		else {*/
-		if(_panZoomState.getMode() == Mode.PAN) {
-			
-		}
-			calculatePanZoomDestination(_panZoomState);
+
+//			calculatePanZoomDestination(_panZoomState);
 			canvas.drawBitmap(getBitmap(), null, _dst, _textPaint);				
 		/*}*/
 	}
 
-	private void calculatePanZoomDestination(PanZoomState panZoomState) {
+/*	private void calculatePanZoomDestination(PanZoomState panZoomState) {
 		// _src records the dimensions of the rectangle after our last pan/zoom.
 		// panZoomState records the movement of the current touch event.
-		float currentZoom = ((float) _last.width()) / ((float) _bitmap.getWidth());
 		
 		if(_panZoomState.getMode() == Mode.ZOOM) {
-			Log.d(TAG, "Zooming");
-			float zoomFactor = _panZoomState.calculateZoom(_bitmap.getHeight());
-			Log.d(TAG, "factor = " + zoomFactor);
-			// calculate the point on the original bitmap which our start point represents.
-			float x = (panZoomState.getX() - _last.left) / currentZoom;
-			float y = (panZoomState.getY() - _last.top) / currentZoom;
-			Log.d(TAG, "x = " + x + ", y = " + y);
-			float newZoom = currentZoom * zoomFactor;
-			
-			_dst.left = (int) (_panZoomState.getX() - x * newZoom);
-			_dst.top = (int) (_panZoomState.getY() - y * newZoom);
-			_dst.right = (int) (_dst.left + _bitmap.getWidth() * newZoom);
-			_dst.bottom = (int) (_dst.top + _bitmap.getHeight() * newZoom);
-			Log.d(TAG, "last: " + _last.flattenToString());
-			Log.d(TAG, "dst: " + _dst.flattenToString());
 		}
 		else if(_panZoomState.getMode() == Mode.PAN){ // PAN
 			Log.d(TAG, "Panning");
@@ -174,7 +201,7 @@ public class MandroidView extends View implements Observer {
 		else { // UP
 			_last.set(_dst);
 		}
-	}
+	}*/
 	
 	private Paint initaliseTextPaint() {
 		Paint p = new Paint();
@@ -182,6 +209,14 @@ public class MandroidView extends View implements Observer {
 		p.setAntiAlias(true);
 		
 		return p;
+	}
+
+	@Override
+	protected void onLayout(boolean changed, int left, int top, int right,
+			int bottom) {
+		super.onLayout(changed, left, top, right, bottom);
+		// trigger regeneration of the mandelbrot
+		generateBitmap(right - left, bottom - top);
 	}
 
 }

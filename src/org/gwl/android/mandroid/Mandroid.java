@@ -8,7 +8,7 @@ import android.os.Bundle;
 public class Mandroid extends Activity {
 	
 	private PanZoomListener _touchListener;
-	private PanZoomState _panZoomState;
+//	private PanZoomState _panZoomState;
 	private Bitmap _bitmap;
 	private MandroidView _view;
 	
@@ -21,12 +21,12 @@ public class Mandroid extends Activity {
         
         _bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.title);
 
-        _panZoomState = new PanZoomState();
+//      _panZoomState = new PanZoomState();
         _touchListener = new PanZoomListener(getApplicationContext());
-        _touchListener.setPanZoomState(_panZoomState);
+//		_touchListener.setPanZoomState(_panZoomState);
         
         _view = (MandroidView) findViewById(R.id.mandroidview);
-        _view.setPanZoomState(_panZoomState);
+//        _view.setPanZoomState(_panZoomState);
         _view.setBitmap(_bitmap);
         _view.setOnTouchListener(_touchListener);
     }
