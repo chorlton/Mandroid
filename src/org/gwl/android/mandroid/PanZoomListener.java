@@ -4,8 +4,6 @@
  */
 package org.gwl.android.mandroid;
 
-import java.util.Observer;
-
 import android.content.Context;
 import android.os.Vibrator;
 import android.util.Log;

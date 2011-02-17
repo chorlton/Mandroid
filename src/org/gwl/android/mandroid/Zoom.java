@@ -12,6 +12,7 @@ import android.util.Log;
 public class Zoom extends TouchOp {
 
 	private static final String TAG = Zoom.class.getName();
+	private static final int FACTOR = 10;
 	
 	private double _x;
 	private double _y;
@@ -33,8 +34,8 @@ public class Zoom extends TouchOp {
 		else {
 			zoomin = 1.0;
 		}
-		double scale = Math.sqrt((x - _x) * (x - _x) + (y - _y) * (y - _y)) * zoomin / _height;
-		_zoom = Math.pow(2.0, 2.0 * scale);
+		double scale = FACTOR * Math.sqrt((x - _x) * (x - _x) + (y - _y) * (y - _y)) * zoomin / _height;
+		_zoom = Math.pow(2.0, scale);
 		
 		Log.d(TAG, "zoom = " + _zoom);
 	}

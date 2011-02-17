@@ -7,7 +7,6 @@ package org.gwl.android.mandroid;
 import java.util.Observable;
 import java.util.Observer;
 
-import org.gwl.android.mandroid.PanZoomListener.Mode;
 import org.gwl.android.mandroid.background.MandroidCreator;
 
 import android.content.Context;
