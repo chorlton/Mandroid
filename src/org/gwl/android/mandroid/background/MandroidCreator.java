@@ -12,6 +12,8 @@ import org.gwl.android.mandroid.StandardColoriser;
 import org.gwl.android.mandroid.MandelbrotParams;
 
 import android.graphics.Bitmap;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 
 /**
@@ -25,6 +27,7 @@ public class MandroidCreator extends Observable implements Runnable {
 
 	public static final int INITIALISED = 0;
 	public static final int FINISHED = 3;
+	public static final int PROGRESS = 4;
 	
 	private MandelbrotParams _params;
 	private int _progress;
@@ -33,8 +36,10 @@ public class MandroidCreator extends Observable implements Runnable {
 	private int _height;
 	private int[] _buffer;
 	private double _scale;
+	private Handler _handler;
 	
-	public MandroidCreator(MandelbrotParams params, int width, int height) {
+	public MandroidCreator(Handler handler, MandelbrotParams params, int width, int height) {
+		_handler = handler;
 		_width = width;
 		_height = height;
 		_params = params;
@@ -57,6 +62,10 @@ public class MandroidCreator extends Observable implements Runnable {
 	
 	private synchronized void setProgress(int pct) {
 		_progress = pct;
+		if(pct % 10 == 0) {
+			Message msg = Message.obtain(_handler, PROGRESS, pct, 0);
+			msg.sendToTarget();
+		}
 	}
 	
 	public synchronized int getProgress() {

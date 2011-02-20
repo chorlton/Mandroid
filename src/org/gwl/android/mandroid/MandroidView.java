@@ -9,6 +9,7 @@ import java.util.Observer;
 
 import org.gwl.android.mandroid.background.MandroidCreator;
 
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -39,16 +40,23 @@ public class MandroidView extends View implements Observer {
 	private Rect _dst;
 	private MandelbrotParams _params;
 	private MandroidCreator _creator = null;
+	private ProgressDialog _progress = null;
 	
-	private Handler _bitmapHandler = new Handler() {
+	private Handler _creationHandler = new Handler() {
 		public void handleMessage(Message msg) {
 			Log.d(TAG, "bitmapHandler.handleMessage()");
-			if(msg.what == MandroidCreator.FINISHED) {
+			switch(msg.what) {
+			case MandroidCreator.FINISHED:
+				_progress.dismiss();
 				setBitmap((Bitmap) msg.obj);
+				break;
+			case MandroidCreator.PROGRESS:
+				_progress.setProgress(msg.arg1);
+				break;
 			}
 		}
 	};
-
+	
 	/* (non-Javadoc)
 	 * @see java.util.Observer#update(java.util.Observable, java.lang.Object)
 	 */
@@ -57,8 +65,8 @@ public class MandroidView extends View implements Observer {
 		// data should be a bitmap
 		if(data != null) {
 			Bitmap bitmap = (Bitmap) data;
-			Message msg = Message.obtain(_bitmapHandler, MandroidCreator.FINISHED, bitmap);
-			_bitmapHandler.sendMessage(msg);
+			Message msg = Message.obtain(_creationHandler, MandroidCreator.FINISHED, bitmap);
+			_creationHandler.sendMessage(msg);
 		}		
 	}
 
@@ -163,8 +171,17 @@ public class MandroidView extends View implements Observer {
 			_creator = null;
 		}
 		
-		_creator = new MandroidCreator(_params, width, height);
+		_creator = new MandroidCreator(_creationHandler, _params, width, height);
 		_creator.addObserver(this);
+		
+		_progress = new ProgressDialog(getContext());
+	    _progress.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+		_progress.setTitle("Generating...");
+		_progress.setMax(100);
+	    _progress.setProgress(0);
+		_progress.setIndeterminate(false);
+		_progress.show();
+		
 		Thread thread = new Thread(_creator, "mandcreator");
 		thread.start();
 	}

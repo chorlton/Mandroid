@@ -41,11 +41,7 @@ public class PanZoomListener implements View.OnTouchListener {
 	public PanZoomListener(Context context) {
 		_vibrator = (Vibrator) context.getSystemService("vibrator");
 	}
-	
-//	public void setPanZoomState(PanZoomState panZoomState) {
-//		_panZoomState = panZoomState;
-//	}
-	
+		
 	/* (non-Javadoc)
 	 * @see android.view.View.OnTouchListener#onTouch(android.view.View, android.view.MotionEvent)
 	 */
@@ -87,21 +83,9 @@ public class PanZoomListener implements View.OnTouchListener {
 
 			break;			
 		case MotionEvent.ACTION_UP:
-//			_panZoomState.setMode(Mode.UP);
-			_touchOp.finish((MandroidView) v);
-			// only on lifting your finger does it trigger the Mandelbort calculation
-/*			Log.d(TAG, "UP: " + event.getX() + ", " + event.getY());
-			Log.d(TAG, "reim: " + _state.x2re((int) event.getX()) + ", " + _state.y2im((int) event.getY()));
-
-			if(_control == ControlType.PAN) {
-				// only the centre coordinates change
-				_state.setReal(_state.x2re((int) _touchX) - _state.x2re((int) event.getX()));
-				_state.setImag(_state.y2im((int) _touchY) - _state.y2im((int) event.getY()));
+			if(_touchOp != null) {
+				_touchOp.finish((MandroidView) v);
 			}
-			else if(_control == ControlType.ZOOM){
-				// do nothing for now
-			}
-			_state.notifyObservers();*/
 			break;
 		}
 					
