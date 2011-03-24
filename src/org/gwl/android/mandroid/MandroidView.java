@@ -48,7 +48,8 @@ public class MandroidView extends View implements Observer {
 			switch(msg.what) {
 			case MandroidCreator.FINISHED:
 				_progress.dismiss();
-				setBitmap((Bitmap) msg.obj);
+				Bitmap bitmap = (Bitmap) msg.obj;
+				setBitmap(bitmap);
 				break;
 			case MandroidCreator.PROGRESS:
 				_progress.setProgress(msg.arg1);
@@ -196,6 +197,7 @@ public class MandroidView extends View implements Observer {
 
 //			calculatePanZoomDestination(_panZoomState);
 			canvas.drawBitmap(getBitmap(), null, _dst, _textPaint);				
+			canvas.drawText(Double.toString(_params.getZoom()), 5, 15, _textPaint);
 		/*}*/
 	}
 
